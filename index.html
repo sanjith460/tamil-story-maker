@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>தமிழ் கதை நேரம் 🎬</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap');
+
+  :root {
+    --gold: #FFD700;
+    --deep-red: #8B0000;
+    --crimson: #DC143C;
+    --dark: #0a0a0a;
+    --curtain: #6B0F1A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans Tamil', sans-serif;
+    background: var(--dark);
+    color: #fff;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── FILM GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; opacity: .4;
+  }
+
+  /* ── FILM STRIP TOP/BOTTOM ── */
+  .film-strip {
+    position: fixed; left: 0; right: 0; height: 36px;
+    background: #111; z-index: 100;
+    display: flex; align-items: center; gap: 6px; padding: 0 8px;
+    overflow: hidden;
+  }
+  .film-strip.top { top: 0; }
+  .film-strip.bottom { bottom: 0; }
+  .film-hole {
+    width: 20px; height: 22px; border-radius: 4px;
+    background: var(--dark); border: 2px solid #333;
+    flex-shrink: 0; animation: filmroll 1s linear infinite;
+  }
+  @keyframes filmroll { from { transform: translateX(0); } to { transform: translateX(-26px); } }
+
+  /* ── CURTAIN INTRO ── */
+  #curtain-wrap {
+    position: fixed; inset: 0; z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .curtain {
+    position: absolute; top: 0; width: 50%; height: 100%;
+    background: linear-gradient(180deg, #6B0F1A 0%, #3D0000 60%, #1a0000 100%);
+    transition: transform 1.4s cubic-bezier(.77,0,.18,1);
+    overflow: hidden;
+  }
+  .curtain::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, rgba(255,215,0,.07) 0px, transparent 12px, transparent 40px);
+  }
+  .curtain.left { left: 0; transform-origin: left; }
+  .curtain.right { right: 0; transform-origin: right; }
+  .curtain.open-left { transform: translateX(-100%); }
+  .curtain.open-right { transform: translateX(100%); }
+  #curtain-wrap.done { display: none; }
+
+  /* ── SPOTLIGHT LOGO ── */
+  #intro-logo {
+    position: fixed; inset: 0; z-index: 998;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(255,215,0,.18) 0%, transparent 70%), #000;
+    transition: opacity .6s;
+  }
+  #intro-logo h1 {
+    font-size: clamp(2rem,6vw,4.5rem); font-weight: 900;
+    color: var(--gold); text-shadow: 0 0 40px rgba(255,215,0,.8);
+    letter-spacing: 4px; animation: glowpulse 1.5s ease-in-out infinite alternate;
+    text-align: center;
+  }
+  #intro-logo p { color: #ccc; font-size: 1.1rem; margin-top: .5rem; letter-spacing: 2px; }
+  @keyframes glowpulse { from { text-shadow: 0 0 20px rgba(255,215,0,.5); } to { text-shadow: 0 0 60px rgba(255,215,0,1), 0 0 100px rgba(255,100,0,.4); } }
+
+  #start-btn {
+    margin-top: 2.5rem; padding: 1rem 3rem; font-size: 1.2rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--gold), #FFA500);
+    color: #000; border: none; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 0 30px rgba(255,215,0,.5); transition: transform .2s, box-shadow .2s;
+    font-family: 'Noto Sans Tamil', sans-serif;
+  }
+  #start-btn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,215,0,.8); }
+
+  /* ── MAIN APP ── */
+  #app {
+    min-height: 100vh; padding: 50px 16px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+  }
+
+  .card {
+    background: linear-gradient(145deg, rgba(30,10,10,.97), rgba(15,5,5,.98));
+    border: 1px solid rgba(255,215,0,.2);
+    border-radius: 24px; padding: 2.5rem 2rem;
+    max-width: 580px; width: 100%;
+    box-shadow: 0 0 60px rgba(220,20,60,.15), 0 0 120px rgba(0,0,0,.8);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--crimson), var(--gold), transparent);
+  }
+
+  /* ── CLAPPERBOARD HEADER ── */
+  .clapper {
+    background: #111; border: 2px solid var(--gold); border-radius: 10px;
+    padding: 1rem 1.5rem; margin-bottom: 2rem; position: relative;
+    overflow: hidden;
+  }
+  .clapper::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 14px;
+    background: repeating-linear-gradient(90deg, #000 0px, #000 18px, var(--gold) 18px, var(--gold) 36px);
+  }
+  .clapper-top {
+    margin-top: 14px; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  }
+  .clapper-top .scene { color: var(--gold); font-size: .8rem; letter-spacing: 1px; }
+  .clapper-top h2 { font-size: clamp(1.2rem, 4vw, 1.8rem); font-weight: 900; color: #fff; }
+  .clapper-sub { font-size: .9rem; color: #aaa; margin-top: .3rem; }
+
+  /* ── STEP INDICATOR FILM ── */
+  .step-film {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px; margin-bottom: 2rem;
+  }
+  .step-frame {
+    width: 36px; height: 28px; border: 2px solid #444; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; font-weight: 700; color: #555;
+    transition: all .3s;
+  }
+  .step-frame.active { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,.1); box-shadow: 0 0 10px rgba(255,215,0,.3); }
+  .step-frame.done { border-color: var(--crimson); background: rgba(220,20,60,.2); color: var(--crimson); }
+  .step-line { height: 2px; flex: 1; background: #333; transition: background .3s; }
+  .step-line.done { background: var(--crimson); }
+
+  /* ── OPTIONS ── */
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: 1.5rem 0; }
+  .opt-btn {
+    padding: .85rem .75rem; border: 2px solid rgba(255,215,0,.2); border-radius: 14px;
+    background: rgba(255,255,255,.03); color: #ddd;
+    cursor: pointer; text-align: center; font-size: .9rem;
+    transition: all .25s; font-family: 'Noto Sans Tamil', sans-serif;
+    line-height: 1.4;
+  }
+  .opt-btn:hover { border-color: rgba(255,215,0,.5); background: rgba(255,215,0,.07); color: #fff; transform: translateY(-2px); }
+  .opt-btn.selected { border-color: var(--gold); background: rgba(255,215,0,.12); color: var(--gold); box-shadow: 0 0 15px rgba(255,215,0,.2); }
+  .opt-btn .emoji { font-size: 1.4rem; display: block; margin-bottom: .3rem; }
+  .opt-btn .ta { font-size: .95rem; display: block; font-weight: 700; }
+  .opt-btn .en { font-size: .7rem; color: #888; display: block; }
+
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1.2rem 0; }
+  .tag-btn {
+    padding: .5rem 1rem; border: 2px solid rgba(255,215,0,.2); border-radius: 50px;
+    background: transparent; color: #ccc; cursor: pointer;
+    font-size: .82rem; transition: all .2s; font-family: 'Noto Sans Tamil', sans-serif;
+  }
+  .tag-btn:hover { border-color: rgba(255,215,0,.5); color: #fff; }
+  .tag-btn.selected { border-color: var(--crimson); background: rgba(220,20,60,.15); color: #ff7777; }
+
+  /* ── INPUT ── */
+  input[type=number], textarea {
+    width: 100%; background: rgba(255,255,255,.05);
+    border: 2px solid rgba(255,215,0,.2); border-radius: 14px;
+    color: #fff; padding: .9rem 1.2rem; font-size: 1rem;
+    font-family: 'Noto Sans Tamil', sans-serif;
+    outline: none; transition: border-color .2s;
+    resize: none;
+  }
+  input[type=number]:focus, textarea:focus { border-color: var(--gold); }
+  input[type=number] { text-align: center; font-size: 1.8rem; font-weight: 900; }
+  ::placeholder { color: #555; }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  .btn-back {
+    padding: .85rem 1.5rem; border-radius: 14px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+    color: #aaa; cursor: pointer; font-size: .9rem;
+    transition: all .2s; font-family: 'Noto Sans Tamil', sans-serif;
+  }
+  .btn-back:hover { background: rgba(255,255,255,.12); color: #fff; }
+  .btn-next {
+    flex: 1; padding: .9rem 1.5rem; border-radius: 14px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border: none; color: #000; font-weight: 900; font-size: 1rem;
+    cursor: pointer; transition: all .2s; font-family: 'Noto Sans Tamil', sans-serif;
+    box-shadow: 0 4px 20px rgba(255,165,0,.3);
+  }
+  .btn-next:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(255,165,0,.5); }
+  .btn-next:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-generate {
+    flex: 1; padding: .9rem 1.5rem; border-radius: 14px;
+    background: linear-gradient(135deg, var(--crimson), #8B0000);
+    border: none; color: #fff; font-weight: 900; font-size: 1rem;
+    cursor: pointer; transition: all .2s; font-family: 'Noto Sans Tamil', sans-serif;
+    box-shadow: 0 4px 20px rgba(220,20,60,.3);
+  }
+  .btn-generate:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(220,20,60,.5); }
+  .btn-generate:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── LOADING ── */
+  #loading-screen {
+    text-align: center; padding: 2rem 0;
+  }
+  .projector-svg { margin: 0 auto 1.5rem; display: block; animation: projectsway 2s ease-in-out infinite; }
+  @keyframes projectsway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  .film-reel-spin { animation: spin 1.5s linear infinite; transform-origin: center; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .loading-dots span {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: .2s; background: var(--crimson); }
+  .loading-dots span:nth-child(3) { animation-delay: .4s; background: #FF6600; }
+  @keyframes bounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+  /* ── STORY DISPLAY ── */
+  #story-screen { display: none; }
+  .story-title-wrap {
+    text-align: center; margin-bottom: 1.5rem;
+    padding: 1rem; border-bottom: 1px solid rgba(255,215,0,.2);
+  }
+  .story-title-wrap .big { font-size: 1.5rem; color: var(--gold); font-weight: 900; }
+  .story-body {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,215,0,.1);
+    border-radius: 16px; padding: 1.5rem; max-height: 50vh;
+    overflow-y: auto; line-height: 1.9; font-size: .95rem; color: #e8d5b7;
+    scrollbar-width: thin; scrollbar-color: var(--gold) transparent;
+  }
+  .story-body::-webkit-scrollbar { width: 5px; }
+  .story-body::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1.25rem; }
+  .btn-action {
+    padding: .85rem 1rem; border-radius: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans Tamil', sans-serif; font-size: .85rem; transition: all .2s;
+    border: none; text-align: center;
+  }
+  .btn-action.print { background: rgba(255,215,0,.15); border: 1px solid var(--gold); color: var(--gold); }
+  .btn-action.print:hover { background: rgba(255,215,0,.25); }
+  .btn-action.new { background: linear-gradient(135deg, var(--crimson), #8B0000); color: #fff; grid-column: span 2; }
+  .btn-action.new:hover { box-shadow: 0 4px 20px rgba(220,20,60,.4); }
+
+  /* ── STAR CONFETTI ── */
+  .star-particle {
+    position: fixed; pointer-events: none; z-index: 9999;
+    font-size: 1.2rem; animation: starfall 2s ease-in forwards;
+  }
+  @keyframes starfall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ── TICKER ── */
+  .ticker-wrap {
+    overflow: hidden; background: linear-gradient(90deg, #1a0000, #2d0000, #1a0000);
+    border-top: 1px solid rgba(255,215,0,.3); border-bottom: 1px solid rgba(255,215,0,.3);
+    padding: .4rem 0; margin-bottom: 1.5rem;
+  }
+  .ticker-content {
+    display: flex; gap: 3rem; white-space: nowrap;
+    animation: ticker 18s linear infinite;
+    color: var(--gold); font-size: .8rem; letter-spacing: 1px;
+  }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  .sparkle-row { display: flex; justify-content: center; gap: .4rem; margin: .6rem 0; }
+  .sparkle { font-size: 1rem; animation: twinkle 1.5s ease-in-out infinite alternate; }
+  .sparkle:nth-child(2) { animation-delay: .3s; }
+  .sparkle:nth-child(3) { animation-delay: .6s; }
+  @keyframes twinkle { from { opacity: .3; transform: scale(.8); } to { opacity: 1; transform: scale(1.2); } }
+</style>
+</head>
+<body>
+
+<!-- FILM STRIPS -->
+<div class="film-strip top" id="topStrip"></div>
+<div class="film-strip bottom" id="botStrip"></div>
+
+<!-- CURTAIN -->
+<div id="curtain-wrap">
+  <div class="curtain left"></div>
+  <div class="curtain right"></div>
+</div>
+
+<!-- INTRO LOGO -->
+<div id="intro-logo">
+  <div class="sparkle-row">
+    <span class="sparkle">⭐</span><span class="sparkle">🌟</span><span class="sparkle">⭐</span>
+  </div>
+  <h1>🎬 தமிழ் கதை நேரம்</h1>
+  <p>Tamil Story Time — Bedtime Cinema</p>
+  <button id="start-btn" onclick="openCurtains()">🎭 திரை திறக்கட்டும்!</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div class="card" id="main-card">
+
+    <!-- TICKER -->
+    <div class="ticker-wrap">
+      <div class="ticker-content">
+        <span>🎬 தமிழ் கதை நேரம்</span>
+        <span>⭐ உங்கள் குழந்தைக்கான கதை</span>
+        <span>🎭 Cinema Magic</span>
+        <span>🌙 இரவு நேர சிறப்பு</span>
+        <span>🎬 தமிழ் கதை நேரம்</span>
+        <span>⭐ உங்கள் குழந்தைக்கான கதை</span>
+        <span>🎭 Cinema Magic</span>
+        <span>🌙 இரவு நேர சிறப்பு</span>
+      </div>
+    </div>
+
+    <!-- STEP FILM -->
+    <div class="step-film" id="step-film">
+      <div class="step-frame active" id="sf1">1</div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-frame" id="sf2">2</div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-frame" id="sf3">3</div>
+      <div class="step-line" id="sl3"></div>
+      <div class="step-frame" id="sf4">4</div>
+      <div class="step-line" id="sl4"></div>
+      <div class="step-frame" id="sf5">5</div>
+    </div>
+
+    <!-- STEP CONTENT -->
+    <div id="step-container"></div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// FILM STRIPS
+// ─────────────────────────────────────────────
+function buildStrips() {
+  ['topStrip','botStrip'].forEach(id => {
+    const el = document.getElementById(id);
+    for (let i = 0; i < 60; i++) {
+      const h = document.createElement('div');
+      h.className = 'film-hole';
+      el.appendChild(h);
+    }
+  });
+}
+buildStrips();
+
+// ─────────────────────────────────────────────
+// CURTAIN OPEN
+// ─────────────────────────────────────────────
+function openCurtains() {
+  const wrap = document.getElementById('curtain-wrap');
+  wrap.querySelectorAll('.curtain').forEach(c => {
+    c.classList.add(c.classList.contains('left') ? 'open-left' : 'open-right');
+  });
+  setTimeout(() => {
+    document.getElementById('intro-logo').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('intro-logo').style.display = 'none';
+      wrap.classList.add('done');
+      document.getElementById('app').style.display = 'flex';
+      renderStep();
+    }, 400);
+  }, 1000);
+}
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const state = {
+  step: 1,
+  age: '',
+  gender: '',
+  interests: [],
+  style: '',
+  lesson: ''
+};
+
+const GENDERS = [
+  { val: 'boy', ta: '👦 ஆண் குழந்தை', en: 'Boy' },
+  { val: 'girl', ta: '👧 பெண் குழந்தை', en: 'Girl' },
+  { val: 'other', ta: '🧒 இரண்டும்', en: 'Other' },
+];
+
+const INTERESTS = [
+  { ta: '🐘 யானை & விலங்குகள்', en: 'Animals' },
+  { ta: '🌟 நட்சத்திரங்கள்', en: 'Stars & Space' },
+  { ta: '🌊 கடல் & மீன்', en: 'Ocean & Fish' },
+  { ta: '🦕 டைனசர்', en: 'Dinosaurs' },
+  { ta: '🧙 மாயாஜாலம்', en: 'Magic' },
+  { ta: '⚽ விளையாட்டு', en: 'Sports' },
+  { ta: '🎵 இசை & பாடல்', en: 'Music & Songs' },
+  { ta: '🌳 காடு & இயற்கை', en: 'Nature & Forest' },
+  { ta: '🦸 ஹீரோ', en: 'Heroes' },
+  { ta: '🚂 ரயில் & வாகனம்', en: 'Vehicles' },
+  { ta: '🍛 சமையல்', en: 'Cooking' },
+  { ta: '🎨 ஓவியம்', en: 'Art' },
+];
+
+const STYLES = [
+  { val: 'funny', ta: '😄 சிரிப்பு கதை', en: 'Funny & Silly', emoji: '😄' },
+  { val: 'adventure', ta: '⚔️ சாகசக் கதை', en: 'Adventure', emoji: '⚔️' },
+  { val: 'gentle', ta: '🌙 அமைதி கதை', en: 'Calm & Gentle', emoji: '🌙' },
+  { val: 'magical', ta: '✨ மந்திர கதை', en: 'Magical', emoji: '✨' },
+  { val: 'cinematic', ta: '🎬 சினிமா கதை', en: 'Cinematic Tamil Drama', emoji: '🎬' },
+];
+
+// ─────────────────────────────────────────────
+// STEP INDICATOR
+// ─────────────────────────────────────────────
+function updateStepFilm() {
+  for (let i = 1; i <= 5; i++) {
+    const f = document.getElementById('sf' + i);
+    f.className = 'step-frame';
+    if (i < state.step) f.classList.add('done');
+    if (i === state.step) f.classList.add('active');
+    if (i < 5) {
+      const l = document.getElementById('sl' + i);
+      l.className = 'step-line' + (i < state.step ? ' done' : '');
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+// CLAPPER HEADER
+// ─────────────────────────────────────────────
+function clapperHTML(scene, ta, en) {
+  return `
+  <div class="clapper">
+    <div class="clapper-top">
+      <span class="scene">SCENE ${scene} / 5</span>
+      <h2>${ta}</h2>
+    </div>
+    <div class="clapper-sub">${en}</div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────────
+// RENDER STEP
+// ─────────────────────────────────────────────
+function renderStep() {
+  updateStepFilm();
+  const c = document.getElementById('step-container');
+
+  if (state.step === 1) {
+    c.innerHTML = `
+      ${clapperHTML(1, '🎬 குழந்தையின் வயது?', 'How old is the child?')}
+      <input type="number" id="age-inp" min="2" max="12" placeholder="வயது (2-12)" value="${state.age}" oninput="state.age=this.value">
+      <div class="btn-row">
+        <button class="btn-next" onclick="goNext()" id="btn-n1">தொடரவும் →</button>
+      </div>`;
+    document.getElementById('age-inp').focus();
+  }
+
+  else if (state.step === 2) {
+    c.innerHTML = `
+      ${clapperHTML(2, '👶 குழந்தை யார்?', 'Tell us about the child')}
+      <div class="options-grid">
+        ${GENDERS.map(g => `
+          <div class="opt-btn ${state.gender===g.val?'selected':''}" onclick="selectGender('${g.val}')">
+            <span class="ta">${g.ta}</span>
+            <span class="en">${g.en}</span>
+          </div>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="goBack()">← திரும்பு</button>
+        <button class="btn-next" onclick="goNext()" ${!state.gender?'disabled':''}>தொடரவும் →</button>
+      </div>`;
+  }
+
+  else if (state.step === 3) {
+    c.innerHTML = `
+      ${clapperHTML(3, '❤️ என்ன பிடிக்கும்?', 'What does your child love?')}
+      <div class="tags-wrap">
+        ${INTERESTS.map(i => `
+          <button class="tag-btn ${state.interests.includes(i.en)?'selected':''}" onclick="toggleInterest('${i.en}', this)">
+            ${i.ta}
+          </button>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="goBack()">← திரும்பு</button>
+        <button class="btn-next" onclick="goNext()" ${state.interests.length===0?'disabled':''} id="btn-n3">தொடரவும் →</button>
+      </div>`;
+  }
+
+  else if (state.step === 4) {
+    c.innerHTML = `
+      ${clapperHTML(4, '🎭 கதையின் ரகம்?', 'What type of story?')}
+      <div class="options-grid">
+        ${STYLES.map(s => `
+          <div class="opt-btn ${state.style===s.val?'selected':''}" onclick="selectStyle('${s.val}')">
+            <span class="emoji">${s.emoji}</span>
+            <span class="ta">${s.ta}</span>
+            <span class="en">${s.en}</span>
+          </div>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="goBack()">← திரும்பு</button>
+        <button class="btn-next" onclick="goNext()" ${!state.style?'disabled':''}>தொடரவும் →</button>
+      </div>`;
+  }
+
+  else if (state.step === 5) {
+    c.innerHTML = `
+      ${clapperHTML(5, '💡 என்ன படிப்பினை?', 'What lesson to include?')}
+      <textarea id="lesson-inp" rows="3" placeholder="உதாரணம்: மற்றவர்களுக்கு உதவுவது நல்லது, உண்மை பேசுவது முக்கியம்..." oninput="state.lesson=this.value">${state.lesson}</textarea>
+      <div class="btn-row">
+        <button class="btn-back" onclick="goBack()">← திரும்பு</button>
+        <button class="btn-generate" onclick="generateStory()" ${!state.lesson.trim()?'disabled':''} id="gen-btn">🎬 கதை உருவாக்கு!</button>
+      </div>`;
+    document.getElementById('lesson-inp').addEventListener('input', e => {
+      document.getElementById('gen-btn').disabled = !e.target.value.trim();
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+// INTERACTIONS
+// ─────────────────────────────────────────────
+function selectGender(v) {
+  state.gender = v;
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.querySelector('.btn-next').disabled = false;
+}
+
+function toggleInterest(en, el) {
+  if (state.interests.includes(en)) {
+    state.interests = state.interests.filter(i => i !== en);
+    el.classList.remove('selected');
+  } else {
+    state.interests.push(en);
+    el.classList.add('selected');
+  }
+  document.getElementById('btn-n3').disabled = state.interests.length === 0;
+}
+
+function selectStyle(v) {
+  state.style = v;
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.querySelector('.btn-next').disabled = false;
+}
+
+function goNext() {
+  if (state.step === 1 && (!state.age || state.age < 2 || state.age > 12)) return;
+  if (state.step < 5) { state.step++; renderStep(); }
+}
+
+function goBack() {
+  if (state.step > 1) { state.step--; renderStep(); }
+}
+
+// ─────────────────────────────────────────────
+// GENERATE STORY
+// ─────────────────────────────────────────────
+async function generateStory() {
+  state.lesson = document.getElementById('lesson-inp')?.value || state.lesson;
+
+  // Show loading
+  document.getElementById('step-film').style.display = 'none';
+  document.getElementById('step-container').innerHTML = `
+    <div id="loading-screen">
+      <svg class="projector-svg" width="120" height="90" viewBox="0 0 120 90">
+        <rect x="10" y="30" width="100" height="50" rx="8" fill="#222" stroke="#FFD700" stroke-width="2"/>
+        <circle cx="60" cy="55" r="18" fill="#111" stroke="#FFD700" stroke-width="2"/>
+        <circle class="film-reel-spin" cx="60" cy="55" r="10" fill="#333" stroke="#DC143C" stroke-width="1.5" style="transform-box:fill-box"/>
+        <circle cx="60" cy="55" r="4" fill="#FFD700"/>
+        <rect x="45" y="20" width="30" height="14" rx="4" fill="#333" stroke="#FFD700" stroke-width="1.5"/>
+        <line x1="60" y1="34" x2="60" y2="30" stroke="#FFD700" stroke-width="2"/>
+        <rect x="0" y="38" width="14" height="34" rx="3" fill="#1a1a1a" stroke="#444" stroke-width="1"/>
+        <rect x="106" y="38" width="14" height="34" rx="3" fill="#1a1a1a" stroke="#444" stroke-width="1"/>
+        <line x1="60" y1="55" x2="110" y2="80" stroke="rgba(255,220,100,0.15)" stroke-width="12"/>
+      </svg>
+      <h2 style="color:var(--gold);font-size:1.5rem;margin-bottom:.5rem">🎬 கதை உருவாகிறது...</h2>
+      <p style="color:#aaa;margin-bottom:1.5rem">ஒரு கணம் பொறுங்கள்... Your story is being crafted!</p>
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>`;
+
+  const prompt = `You are a Tamil children's storyteller. Write a bedtime story in Tamil language (தமிழில் மட்டும் எழுதுக) for a ${state.age}-year-old ${state.gender} child who loves: ${state.interests.join(', ')}.
+
+Story style: ${state.style}
+Moral lesson to include: ${state.lesson}
+
+Requirements:
+- Write ENTIRELY in Tamil script (தமிழ் மட்டும்)
+- Include Tamil cultural elements: traditional food, festivals, places like Chennai/Madurai/Ooty, Tamil names for characters
+- Add a dramatic Tamil cinema-style narrative — vivid descriptions, emotional moments, a twist or heroic scene
+- Keep it bedtime-appropriate — calm, warm ending
+- Length: 350–500 words
+- Begin directly with the story — no title, no preamble
+
+Start the story now:`;
+
+  try {
+    let text = '';
+    if (window.claude && typeof window.claude.complete === 'function') {
+      text = await window.claude.complete(prompt);
+    } else {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      text = data.content.map(b => b.text || '').join('');
+    }
+    showStory(text);
+  } catch (e) {
+    document.getElementById('step-container').innerHTML = `
+      <div style="text-align:center;padding:2rem">
+        <p style="color:#ff7777;font-size:1.1rem">⚠️ பிழை ஏற்பட்டது</p>
+        <p style="color:#aaa;font-size:.85rem;margin-top:.5rem">${e.message || 'Unknown error'}</p>
+        <button class="btn-next" style="margin-top:1.5rem;max-width:200px" onclick="resetAll()">மீண்டும் முயற்சி</button>
+      </div>`;
+    document.getElementById('step-film').style.display = 'flex';
+  }
+}
+
+// ─────────────────────────────────────────────
+// SHOW STORY
+// ─────────────────────────────────────────────
+function showStory(text) {
+  spawnStars();
+  document.getElementById('step-container').innerHTML = `
+    <div class="story-title-wrap">
+      <div class="sparkle-row">
+        <span class="sparkle">🌟</span><span class="sparkle">🎬</span><span class="sparkle">🌟</span>
+      </div>
+      <div class="big">உங்கள் குழந்தையின் கதை தயார்!</div>
+      <div style="color:#888;font-size:.85rem;margin-top:.3rem">Your bedtime story is ready — இனிய கனவுகள்! 🌙</div>
+    </div>
+    <div class="story-body">${text.replace(/\n/g,'<br>')}</div>
+    <div class="action-row">
+      <button class="btn-action print" onclick="printStory()">🖨️ அச்சிடு / Print</button>
+      <button class="btn-action print" onclick="copyStory()">📋 நகலெடு / Copy</button>
+      <button class="btn-action new" onclick="resetAll()">🎬 புதிய கதை / New Story</button>
+    </div>`;
+  document._storyText = text;
+}
+
+function printStory() {
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><meta charset="UTF-8"><title>தமிழ் கதை</title>
+  <style>body{font-family:'Noto Sans Tamil',sans-serif;padding:2rem;font-size:1.1rem;line-height:2;color:#333}</style></head>
+  <body><h2 style="text-align:center">🌙 தமிழ் கதை நேரம் 🌙</h2><br>${document._storyText.replace(/\n/g,'<br>')}</body></html>`);
+  w.print();
+}
+
+async function copyStory() {
+  try {
+    await navigator.clipboard.writeText(document._storyText);
+    alert('கதை நகலெடுக்கப்பட்டது! ✅');
+  } catch { alert('நகலெடுக்க முடியவில்லை.'); }
+}
+
+function resetAll() {
+  state.step = 1; state.age = ''; state.gender = '';
+  state.interests = []; state.style = ''; state.lesson = '';
+  document.getElementById('step-film').style.display = 'flex';
+  renderStep();
+}
+
+// ─────────────────────────────────────────────
+// STAR CONFETTI
+// ─────────────────────────────────────────────
+function spawnStars() {
+  const emojis = ['⭐','🌟','✨','🎬','🎭','🌙','❤️'];
+  for (let i = 0; i < 22; i++) {
+    setTimeout(() => {
+      const s = document.createElement('div');
+      s.className = 'star-particle';
+      s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      s.style.left = Math.random() * 100 + 'vw';
+      s.style.top = '-30px';
+      s.style.animationDuration = (1.5 + Math.random()) + 's';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 2500);
+    }, i * 100);
+  }
+}
+</script>
+</body>
+</html>
