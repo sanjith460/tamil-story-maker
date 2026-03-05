@@ -572,10 +572,29 @@ function goBack() {
 }
 
 // ─────────────────────────────────────────────
+// API KEY PROMPT
+// ─────────────────────────────────────────────
+function getApiKey() {
+  let key = localStorage.getItem('anthropic_api_key');
+  if (!key) {
+    key = prompt('🔑 உங்கள் Anthropic API Key உள்ளிடவும்:\n(Enter your Anthropic API Key — it will be saved in this browser only)\n\nGet it at: https://console.anthropic.com');
+    if (!key) return null;
+    localStorage.setItem('anthropic_api_key', key.trim());
+  }
+  return key.trim();
+}
+
+// ─────────────────────────────────────────────
 // GENERATE STORY
 // ─────────────────────────────────────────────
 async function generateStory() {
   state.lesson = document.getElementById('lesson-inp')?.value || state.lesson;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    alert('API Key இல்லாமல் கதை உருவாக்க முடியாது.');
+    return;
+  }
 
   // Show loading
   document.getElementById('step-film').style.display = 'none';
@@ -613,30 +632,37 @@ Requirements:
 Start the story now:`;
 
   try {
-    let text = '';
-    if (window.claude && typeof window.claude.complete === 'function') {
-      text = await window.claude.complete(prompt);
-    } else {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      text = data.content.map(b => b.text || '').join('');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) {
+      // Bad key — clear it so user can re-enter
+      if (data.error.type === 'authentication_error') {
+        localStorage.removeItem('anthropic_api_key');
+        throw new Error('தவறான API Key! சரியான key-ஐ மீண்டும் உள்ளிடவும். (Invalid API Key — it has been cleared, please try again.)');
+      }
+      throw new Error(data.error.message);
     }
+    const text = data.content.map(b => b.text || '').join('');
     showStory(text);
   } catch (e) {
     document.getElementById('step-container').innerHTML = `
       <div style="text-align:center;padding:2rem">
         <p style="color:#ff7777;font-size:1.1rem">⚠️ பிழை ஏற்பட்டது</p>
-        <p style="color:#aaa;font-size:.85rem;margin-top:.5rem">${e.message || 'Unknown error'}</p>
-        <button class="btn-next" style="margin-top:1.5rem;max-width:200px" onclick="resetAll()">மீண்டும் முயற்சி</button>
+        <p style="color:#aaa;font-size:.85rem;margin-top:.75rem">${e.message || 'Unknown error'}</p>
+        <button class="btn-next" style="margin-top:1.5rem;max-width:220px" onclick="resetAll()">மீண்டும் முயற்சி</button>
       </div>`;
     document.getElementById('step-film').style.display = 'flex';
   }
